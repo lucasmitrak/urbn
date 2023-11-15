@@ -1,0 +1,1264 @@
+<?php
+
+/**
+ * This controller shows an area that's only visible for logged in users (because of Auth::checkAuthentication(); in line 16)
+ */
+class TableController extends Controller
+{
+    /**
+     * Construct this object by extending the basic Controller class
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        // this entire controller should only be visible/usable by logged in users, so we put authentication-check here
+        Auth::checkAuthentication();
+    }
+
+    /**
+     * This method controls what happens when you move to /dashboard/index in your app.
+     */
+    public function index()
+    {
+	    $table='';
+
+	    $s = REQUEST::post('btnFTM');
+	    if(!empty($s)){
+		    $table.=TableController::getTimelineHtml();
+	    }
+	    $s = REQUEST::post('btnFTC');
+	    if(!empty($s)){
+		    $table.=TableController::getTimelineCommentsHtml();
+	    }
+	    $s = REQUEST::post('btnMIDC');
+	    if(!empty($s)){
+		    $table.=TableController::getMIDCHtml();
+	    }
+	    $s = REQUEST::get('midcid');
+	    if(!empty($s)){
+		    $table.=TableController::getMIDCIdHtml();
+	    }
+	    $s = REQUEST::post('btnMC');
+	    if(!empty($s)){
+		    $table.=TableController::getMCHtml();
+	    }
+	    $s = REQUEST::get('mcid');
+	    if(!empty($s)){
+		    $table.=TableController::getMCIdHtml();
+	    }
+	    $this->View->render('table/index', array(
+		    'table' => $table));
+    }
+
+    /**
+     * This method runs your search in multiple tables and exports a xls.
+     */
+    public function getTimelineCsv() 
+    {
+        $s = REQUEST::post('txtFTM');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            //headers and formatting for xls - because its html excel will think its corrupted but it still works.
+            header("Content-type: application/vnd.ms-excel");
+            header("Content-Disposition: attachment;Filename=Timelines.xls");
+            echo "<html>";
+            echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Windows-1252\">";
+            echo "<body>";
+            echo "<table border=1>";
+            // This is for the first line in the excel file, this needs to be edited depending on the table.
+            echo "<tr><th>Id</th><th>Posting Profile</th><th>Friend</th><th>Poster</th><th>PosterLink</th><th>Action</th><th>Message</th><th>PostTime_FB</th><th>PostTime</th><th>Privacy</th><th>Likes</th><th>Likers</th><th>Post Link</th><th>Comments</th><th>First Seen</th><th>Last Seen</th></tr>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table_array = [
+                'fb01_timeline',
+                'fb02_timeline',
+                'fb03_timeline',
+                'fb04_timeline',
+                'fb05_timeline',
+                'fb06_timeline',
+                'fb07_timeline',
+                'fb08_timeline',
+                'fb09_timeline',
+                'fb10_timeline'
+		];
+            //iterates through tables, if using different structured tables we need to set up a conditional block for selecting the right query to run or we need to take pictures out of db altogether.
+            for($i = 0; $i < count($table_array); ++$i) {
+                $table = $table_array[$i];
+                // If searching multiple columns don't use for loop instead build union query to avoid duplicate rows.
+		$column="message";
+                //Sql query to search, just don't forget to concate the strings together using .= or . 
+                $sql_query = "SELECT id,postingProfile,friend,poster,posterLink,action,message,postTime_fb,postTime,privacy,likes,likers,postLink,comments,firstSeen,lastSeen,tag FROM " . $table;
+                $sql_query .= " WHERE ";
+                $sql_query .= $column;
+                $sql_query .= " LIKE '%";
+                $sql_query .= $s;
+                $sql_query .= "%';";
+                $STM2 = $dbh->prepare($sql_query);
+                //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+                // bind paramenters, Named paramenters alaways start with colon(:)
+                //$STM2->bindParam(':EntryBy', $EntryBy);
+                // For Executing prepared statement we will use below function
+                $STM2->execute();
+                // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+                $STMrecords = $STM2->fetchAll();
+                // We use foreach loop here to echo records.
+                foreach($STMrecords as $r)
+                    {
+                        echo "<tr>";
+                        echo "<td>" .$r[0] ."</td>";
+                        echo "<td>" .$r[1] ."</td>";
+                        echo "<td>" .$r[2] ."</td>";
+                        echo "<td>" .$r[3] ."</td>";
+                        echo "<td>" .$r[4] ."</td>";
+                        echo "<td>" .$r[5] ."</td>";
+                        echo "<td>" .$r[6] ."</td>";
+                        echo "<td>" .$r[7] ."</td>";
+                        echo "<td>" .$r[8] ."</td>";
+                        echo "<td>" .$r[9] ."</td>";
+                        echo "<td>" .$r[10] ."</td>";
+                        echo "<td>" .$r[11] ."</td>";
+                        echo "<td>" .$r[12] ."</td>";
+                        echo "<td>" .$r[13] ."</td>";
+                        echo "<td>" .$r[14] ."</td>";
+                        echo "<td>" .$r[15] ."</td>";
+                        echo "</tr>";  
+                    }
+            }
+
+            echo "</table>";
+            echo "</body>";
+            echo "</html>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            echo $e->getMessage();    
+        }
+    }
+
+    /**
+     * This method runs comments search and exports a xls.
+     */
+    public function getTimelineCommentsCsv() 
+    {
+        $s = REQUEST::post('txtFTC');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            //headers and formatting for xls - because its html excel will think its corrupted but it still works.
+            header("Content-type: application/vnd.ms-excel");
+            header("Content-Disposition: attachment;Filename=Timeline-Comments.xls");
+            echo "<html>";
+            echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Windows-1252\">";
+            echo "<body>";
+            echo "<table border=1>";
+            // This is for the first line in the excel file, this needs to be edited depending on the table.
+            echo "<tr><th>Id</th><th>Posting Profile</th><th>Timeline Id</th><th>Name</th><th>Link</th><th>Message</th><th>PostTime_FB</th><th>PostTime</th><th>First Seen</th><th>Last Seen</th><th>Tag</th></tr>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table_array = [
+                'fb01_comments',
+                'fb02_comments',
+                'fb03_comments',
+                'fb04_comments',
+                'fb05_comments',
+                'fb06_comments',
+                'fb07_comments',
+                'fb08_comments',
+                'fb09_comments',
+                'fb10_comments'
+            ];
+            //iterates through tables, if using different structured tables we need to set up a conditional block for selecting the right query to run or we need to take pictures out of db altogether.
+            for($i = 0; $i < count($table_array); ++$i) {
+                $table = $table_array[$i];
+                // If searching multiple columns don't use for loop instead build union query to avoid duplicate rows.
+		$column="message";
+                //Sql query to search, just don't forget to concontinate the strings together using .= or . 
+                $sql_query = "SELECT id,postingProfile,timelineID,name,link,message,postTime_fb,postTime,firstSeen,lastSeen,tag FROM " . $table;
+                $sql_query .= " WHERE ";
+                $sql_query .= $column;
+                $sql_query .= " LIKE '%";
+                $sql_query .= $s;
+                $sql_query .= "%';";
+                $STM2 = $dbh->prepare($sql_query);
+                //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+                // bind paramenters, Named paramenters alaways start with colon(:)
+                //$STM2->bindParam(':EntryBy', $EntryBy);
+                // For Executing prepared statement we will use below function
+                $STM2->execute();
+                // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+                $STMrecords = $STM2->fetchAll();
+                // We use foreach loop here to echo records.
+                foreach($STMrecords as $r)
+                    {
+                        echo "<tr>";
+                        echo "<td>" .$r[0] ."</td>";
+                        echo "<td>" .$r[1] ."</td>";
+                        echo "<td>" .$r[2] ."</td>";
+                        echo "<td>" .$r[3] ."</td>";
+                        echo "<td>" .$r[4] ."</td>";
+                        echo "<td>" .$r[5] ."</td>";
+                        echo "<td>" .$r[6] ."</td>";
+                        echo "<td>" .$r[7] ."</td>";
+                        echo "<td>" .$r[8] ."</td>";
+                        echo "<td>" .$r[9] ."</td>";
+                        echo "<td>" .$r[10] ."</td>";
+                        echo "</tr>";
+                    }
+            }
+
+            echo "</table>";
+            echo "</body>";
+            echo "</html>";
+            // Closing MySQL database connection
+            $dbh = null;
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            echo $e->getMessage();
+        }
+    }
+
+    /**
+     * This method runs your search in multiple tables and returns a table
+     */
+    public function getTimelineHtml()
+    {
+	$result='';
+        $s = REQUEST::post('txtFTM');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"message\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Id</th><th>Posting Profile</th><th>Friend</th><th>Poster</th><th>PosterLink</th><th>Action</th><th>Message</th><th>PostTime_FB</th><th>PostTime</th><th>Privacy</th><th>Likes</th><th>Likers</th><th>Post Link</th><th>Comments</th><th>First Seen</th><th>Last Seen</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Id</th><th>Posting Profile</th><th>Friend</th><th>Poster</th><th>PosterLink</th><th>Action</th><th>Message</th><th>PostTime_FB</th><th>PostTime</th><th>Privacy</th><th>Likes</th><th>Likers</th><th>Post Link</th><th>Comments</th><th>First Seen</th><th>Last Seen</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table_array = [
+                'fb01_timeline',
+                'fb02_timeline',
+                'fb03_timeline',
+                'fb04_timeline',
+                'fb05_timeline',
+                'fb06_timeline',
+                'fb07_timeline',
+                'fb08_timeline',
+                'fb09_timeline',
+                'fb10_timeline'
+		];
+            //iterates through tables, if using different structured tables we need to set up a conditional block for selecting the right query to run or we need to take pictures out of db altogether.
+            for($i = 0; $i < count($table_array); ++$i) {
+                $table = $table_array[$i];
+                // If searching multiple columns don't use for loop instead build union query to avoid duplicate rows.
+		$column="message";
+                //Sql query to search, just don't forget to concate the strings together using .= or . 
+                $sql_query = "SELECT id,postingProfile,friend,poster,posterLink,action,message,postTime_fb,postTime,privacy,likes,likers,postLink,comments,firstSeen,lastSeen,tag FROM " . $table;
+                $sql_query .= " WHERE ";
+                $sql_query .= $column;
+                $sql_query .= " LIKE '%";
+                $sql_query .= $s;
+                $sql_query .= "%';";
+                $STM2 = $dbh->prepare($sql_query);
+                //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+                // bind paramenters, Named paramenters alaways start with colon(:)
+                //$STM2->bindParam(':EntryBy', $EntryBy);
+                // For Executing prepared statement we will use below function
+                $STM2->execute();
+                // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+                $STMrecords = $STM2->fetchAll();
+                // We use foreach loop here to echo records.
+                foreach($STMrecords as $r)
+                    {
+                        $result.= "<tr>";
+                        $result.= "<td>" .$r[0] ."</td>";
+                        $result.= "<td>" .$r[1] ."</td>";
+                        $result.= "<td>" .$r[2] ."</td>";
+                        $result.= "<td>" .$r[3] ."</td>";
+                        $result.= "<td>" .$r[4] ."</td>";
+                        $result.= "<td>" .$r[5] ."</td>";
+                        $result.= "<td>" .$r[6] ."</td>";
+                        $result.= "<td>" .$r[7] ."</td>";
+                        $result.= "<td>" .$r[8] ."</td>";
+                        $result.= "<td>" .$r[9] ."</td>";
+                        $result.= "<td>" .$r[10] ."</td>";
+                        $result.= "<td>" .$r[11] ."</td>";
+                        $result.= "<td>" .$r[12] ."</td>";
+                        $result.= "<td>" .$r[13] ."</td>";
+                        $result.= "<td>" .$r[14] ."</td>";
+                        $result.= "<td>" .$r[15] ."</td>";
+                        $result.= "</tr>";  
+                    }
+            }
+
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    /**
+     * This method runs comments search and returns a table
+     */
+    public function getTimelineCommentsHtml() 
+    {
+	$result='';
+        $s = REQUEST::post('txtFTC');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            //headers and formatting for xls - because its html excel will think its corrupted but it still works.
+            $result.= "<table id=\"comment\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the excel file, this needs to be edited depending on the table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Id</th><th>Posting Profile</th><th>Timeline Id</th><th>Name</th><th>Link</th><th>Message</th><th>PostTime_FB</th><th>PostTime</th><th>First Seen</th><th>Last Seen</th><th>Tag</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Id</th><th>Posting Profile</th><th>Timeline Id</th><th>Name</th><th>Link</th><th>Message</th><th>PostTime_FB</th><th>PostTime</th><th>First Seen</th><th>Last Seen</th><th>Tag</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table_array = [
+                'fb01_comments',
+                'fb02_comments',
+                'fb03_comments',
+                'fb04_comments',
+                'fb05_comments',
+                'fb06_comments',
+                'fb07_comments',
+                'fb08_comments',
+                'fb09_comments',
+                'fb10_comments'
+            ];
+            //iterates through tables, if using different structured tables we need to set up a conditional block for selecting the right query to run or we need to take pictures out of db altogether.
+            for($i = 0; $i < count($table_array); ++$i) {
+                $table = $table_array[$i];
+                // If searching multiple columns don't use for loop instead build union query to avoid duplicate rows.
+		$column="message";
+                //Sql query to search, just don't forget to concontinate the strings together using .= or . 
+                $sql_query = "SELECT id,postingProfile,timelineID,name,link,message,postTime_fb,postTime,firstSeen,lastSeen,tag FROM " . $table;
+                $sql_query .= " WHERE ";
+                $sql_query .= $column;
+                $sql_query .= " LIKE '%";
+                $sql_query .= $s;
+                $sql_query .= "%';";
+                $STM2 = $dbh->prepare($sql_query);
+                //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+                // bind paramenters, Named paramenters alaways start with colon(:)
+                //$STM2->bindParam(':EntryBy', $EntryBy);
+                // For Executing prepared statement we will use below function
+                $STM2->execute();
+                // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+                $STMrecords = $STM2->fetchAll();
+                // We use foreach loop here to echo records.
+                foreach($STMrecords as $r)
+                    {
+                        $result.= "<tr>";
+                        $result.= "<td>" .$r[0] ."</td>";
+                        $result.= "<td>" .$r[1] ."</td>";
+                        $result.= "<td>" .$r[2] ."</td>";
+                        $result.= "<td>" .$r[3] ."</td>";
+                        $result.= "<td>" .$r[4] ."</td>";
+                        $result.= "<td>" .$r[5] ."</td>";
+                        $result.= "<td>" .$r[6] ."</td>";
+                        $result.= "<td>" .$r[7] ."</td>";
+                        $result.= "<td>" .$r[8] ."</td>";
+                        $result.= "<td>" .$r[9] ."</td>";
+                        $result.= "<td>" .$r[10] ."</td>";
+                        $result.= "</tr>";
+                    }
+            }
+
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection
+            $dbh = null;
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();
+	}
+	return $result;
+    }
+
+    public function getMIDCCsv()
+    {
+        $sFN = REQUEST::post('txtMFN');
+        $sLN = REQUEST::post('txtMLN');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+	    header("Content-type: application/vnd.ms-excel");
+	    header("Content-Disposition: attachment;Filename=Timelines.xls");
+	    echo "<html>";
+	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Windows-1252\">";
+	    echo "<body>";
+	    echo "<table border=1>";
+
+            echo "<tr><th>MDM Id</th><th>Date Recorded</th><th>MDOC Number</th><th>SID Number</th><th>Full Name</th><th>Last Name</th><th>First Name</th><th>Middle Name</th><th>Race</th><th>Sex</th><th>Hair</th><th>Eyes</th><th>Height</th><th>Weight</th><th>Date of Birth</th><th>Image Date</th><th>Image URL</th><th>Image URL Local</th><th>Current Status</th><th>Assigned Location</th><th>Security Level</th><th>Date Intake</th><th>Date Discharged</th><th>Profile URL</th></tr>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_main";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT mdm_id,date_recorded,mdoc_number,sid_number,full_name,last_name,first_name,middle_name,race,sex,hair,eyes,height,weight,date_of_birth,image_date,image_url,image_url_local,current_status,assigned_location,security_level,date_intake,date_discharge,profile_url FROM " . $table;
+            $sql_query .= " WHERE ";
+	    if(!empty($sFN)){
+	    	$column="first_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sFN;
+	    	$sql_query .= "%';";
+	    }
+	    if(!empty($sFN) and !empty($sLN)){
+		$sql_query .= ' OR ';
+	    }
+	    if(!empty($sLN)){
+	    	$column="last_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sLN;
+	    	$sql_query .= "%';";
+	    }
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    echo "<tr>";
+                    echo "<td>" .$r[0] ."</td>";
+                    echo "<td>" .$r[1] ."</td>";
+                    echo "<td>" .$r[2] ."</td>";
+                    echo "<td>" .$r[3] ."</td>";
+                    echo "<td>" .$r[4] ."</td>";
+                    echo "<td>" .$r[5] ."</td>";
+                    echo "<td>" .$r[6] ."</td>";
+                    echo "<td>" .$r[7] ."</td>";
+                    echo "<td>" .$r[8] ."</td>";
+                    echo "<td>" .$r[9] ."</td>";
+                    echo "<td>" .$r[10] ."</td>";
+                    echo "<td>" .$r[11] ."</td>";
+                    echo "<td>" .$r[12] ."</td>";
+                    echo "<td>" .$r[13] ."</td>";
+                    echo "<td>" .$r[14] ."</td>";
+                    echo "<td>" .$r[15] ."</td>";
+                    echo "<td>" .$r[16] ."</td>";
+                    echo "<td>" .$r[17] ."</td>";
+                    echo "<td>" .$r[18] ."</td>";
+                    echo "<td>" .$r[19] ."</td>";
+                    echo "<td>" .$r[20] ."</td>";
+                    echo "<td>" .$r[21] ."</td>";
+                    echo "<td>" .$r[22] ."</td>";
+                    echo "<td>" .$r[23] ."</td>";
+                    echo "</tr>";  
+                  }
+	    echo "</table>";
+	    echo "</body>";
+	    echo "</html>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            echo $e->getMessage();    
+        }
+    }
+
+    public function getMIDCHtml()
+    {
+	$result='';
+        $sFN = REQUEST::post('txtMFN');
+        $sLN = REQUEST::post('txtMLN');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midc\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>MDM Id</th><th>Date Recorded</th><th>MDOC Number</th><th>SID Number</th><th>Full Name</th><th>Last Name</th><th>First Name</th><th>Middle Name</th><th>Race</th><th>Sex</th><th>Hair</th><th>Eyes</th><th>Height</th><th>Weight</th><th>Date of Birth</th><th>Image Date</th><th>Image URL</th><th>Image URL Local</th><th>Current Status</th><th>Assigned Location</th><th>Security Level</th><th>Date Intake</th><th>Date Discharged</th><th>Profile URL</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>MDM Id</th><th>Date Recorded</th><th>MDOC Number</th><th>SID Number</th><th>Full Name</th><th>Last Name</th><th>First Name</th><th>Middle Name</th><th>Race</th><th>Sex</th><th>Hair</th><th>Eyes</th><th>Height</th><th>Weight</th><th>Date of Birth</th><th>Image Date</th><th>Image URL</th><th>Image URL Local</th><th>Current Status</th><th>Assigned Location</th><th>Security Level</th><th>Date Intake</th><th>Date Discharged</th><th>Profile URL</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_main";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT mdm_id,date_recorded,mdoc_number,sid_number,full_name,last_name,first_name,middle_name,race,sex,hair,eyes,height,weight,date_of_birth,image_date,image_url,image_url_local,current_status,assigned_location,security_level,date_intake,date_discharge,profile_url FROM " . $table;
+            $sql_query .= " WHERE ";
+	    if(!empty($sFN)){
+	    	$column="first_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sFN;
+	    	$sql_query .= "%';";
+	    }
+	    if(!empty($sFN) and !empty($sLN)){
+		$sql_query .= ' OR ';
+	    }
+	    if(!empty($sLN)){
+	    	$column="last_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sLN;
+	    	$sql_query .= "%';";
+	    }
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr onclick=\"window.open('" . Config::get('URL') . "table/index?midcid=" . $r[0] . "','_blank');\" style=\"cursor:pointer\" >";
+		    //$result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "<td>" .$r[2] ."</td>";
+                    $result.= "<td>" .$r[3] ."</td>";
+                    $result.= "<td>" .$r[4] ."</td>";
+                    $result.= "<td>" .$r[5] ."</td>";
+                    $result.= "<td>" .$r[6] ."</td>";
+                    $result.= "<td>" .$r[7] ."</td>";
+                    $result.= "<td>" .$r[8] ."</td>";
+                    $result.= "<td>" .$r[9] ."</td>";
+                    $result.= "<td>" .$r[10] ."</td>";
+                    $result.= "<td>" .$r[11] ."</td>";
+                    $result.= "<td>" .$r[12] ."</td>";
+                    $result.= "<td>" .$r[13] ."</td>";
+                    $result.= "<td>" .$r[14] ."</td>";
+                    $result.= "<td>" .$r[15] ."</td>";
+                    $result.= "<td>" .$r[16] ."</td>";
+                    $result.= "<td>" .$r[17] ."</td>";
+                    $result.= "<td>" .$r[18] ."</td>";
+                    $result.= "<td>" .$r[19] ."</td>";
+                    $result.= "<td>" .$r[20] ."</td>";
+                    $result.= "<td>" .$r[21] ."</td>";
+                    $result.= "<td>" .$r[22] ."</td>";
+                    $result.= "<td>" .$r[23] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    public function getMIDCIdHtml()
+    {
+	    $result='';
+	    $id=REQUEST::get('midcid');
+	    $result.=TableController::getMIDCSentencesHtml($id);
+	    $result.=TableController::getMIDCMarksHtml($id);
+	    $result.=TableController::getMIDCAliasesHtml($id);
+	    return $result;
+    }
+
+    public function getMIDCSentencesHtml($id)
+    {
+	$result='';
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midcsentences\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Date Recorded</th><th>Type</th><th>Offense</th><th>MCL Number</th><th>Court File Number</th><th>County</th><th>Conviction Type</th><th>Min Sentence</th><th>Max Sentence</th><th>Date of Offense</th><th>Discharge Date</th><th>Discharge Reason</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Date Recorded</th><th>Type</th><th>Offense</th><th>MCL Number</th><th>Court File Number</th><th>County</th><th>Conviction Type</th><th>Min Sentence</th><th>Max Sentence</th><th>Date of Offense</th><th>Discharge Date</th><th>Discharge Reason</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_sentences";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT date_recorded,type,offense,mcl_number,court_file_number,county,conviction_type,min_sentence,max_sentence,date_of_offense,discharge_date,discharge_reason FROM " . $table;
+            $sql_query .= " WHERE ";
+	    $column="mdm_id";
+            $sql_query .= $column;
+            $sql_query .= '=';
+            $sql_query .= $id;
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "<td>" .$r[2] ."</td>";
+                    $result.= "<td>" .$r[3] ."</td>";
+                    $result.= "<td>" .$r[4] ."</td>";
+                    $result.= "<td>" .$r[5] ."</td>";
+                    $result.= "<td>" .$r[6] ."</td>";
+                    $result.= "<td>" .$r[7] ."</td>";
+                    $result.= "<td>" .$r[8] ."</td>";
+                    $result.= "<td>" .$r[9] ."</td>";
+                    $result.= "<td>" .$r[10] ."</td>";
+                    $result.= "<td>" .$r[11] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    public function getMIDCMarksHtml($id)
+    {
+	$result='';
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midcmarks\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Mark</th><th>Date Recorded</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Mark</th><th>Date Recorded</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_marks";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT mark,date_recorded FROM " . $table;
+            $sql_query .= " WHERE ";
+	    $column="mdm_id";
+            $sql_query .= $column;
+            $sql_query .= '=';
+            $sql_query .= $id;
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    public function getMIDCAliasesHtml($id)
+    {
+	$result='';
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midcaliases\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Alias</th><th>Date Recorded</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Alias</th><th>Date Recorded</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_aliases";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT alias,date_recorded FROM " . $table;
+            $sql_query .= " WHERE ";
+	    $column="mdm_id";
+            $sql_query .= $column;
+            $sql_query .= '=';
+            $sql_query .= $id;
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    public function getMCCsv()
+    {
+        $sFN = REQUEST::post('txtMCFN');
+        $sLN = REQUEST::post('txtMCLN');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+	    header("Content-type: application/vnd.ms-excel");
+	    header("Content-Disposition: attachment;Filename=Timelines.xls");
+	    echo "<html>";
+	    echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Windows-1252\">";
+	    echo "<body>";
+	    echo "<table border=1>";
+
+            echo "<tr><th>MDM Id</th><th>Date Recorded</th><th>MDOC Number</th><th>SID Number</th><th>Full Name</th><th>Last Name</th><th>First Name</th><th>Middle Name</th><th>Race</th><th>Sex</th><th>Hair</th><th>Eyes</th><th>Height</th><th>Weight</th><th>Date of Birth</th><th>Image Date</th><th>Image URL</th><th>Image URL Local</th><th>Current Status</th><th>Assigned Location</th><th>Security Level</th><th>Date Intake</th><th>Date Discharged</th><th>Profile URL</th></tr>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_main";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT mdm_id,date_recorded,mdoc_number,sid_number,full_name,last_name,first_name,middle_name,race,sex,hair,eyes,height,weight,date_of_birth,image_date,image_url,image_url_local,current_status,assigned_location,security_level,date_intake,date_discharge,profile_url FROM " . $table;
+            $sql_query .= " WHERE ";
+	    if(!empty($sFN)){
+	    	$column="first_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sFN;
+	    	$sql_query .= "%';";
+	    }
+	    if(!empty($sFN) and !empty($sLN)){
+		$sql_query .= ' OR ';
+	    }
+	    if(!empty($sLN)){
+	    	$column="last_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sLN;
+	    	$sql_query .= "%';";
+	    }
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    echo "<tr>";
+                    echo "<td>" .$r[0] ."</td>";
+                    echo "<td>" .$r[1] ."</td>";
+                    echo "<td>" .$r[2] ."</td>";
+                    echo "<td>" .$r[3] ."</td>";
+                    echo "<td>" .$r[4] ."</td>";
+                    echo "<td>" .$r[5] ."</td>";
+                    echo "<td>" .$r[6] ."</td>";
+                    echo "<td>" .$r[7] ."</td>";
+                    echo "<td>" .$r[8] ."</td>";
+                    echo "<td>" .$r[9] ."</td>";
+                    echo "<td>" .$r[10] ."</td>";
+                    echo "<td>" .$r[11] ."</td>";
+                    echo "<td>" .$r[12] ."</td>";
+                    echo "<td>" .$r[13] ."</td>";
+                    echo "<td>" .$r[14] ."</td>";
+                    echo "<td>" .$r[15] ."</td>";
+                    echo "<td>" .$r[16] ."</td>";
+                    echo "<td>" .$r[17] ."</td>";
+                    echo "<td>" .$r[18] ."</td>";
+                    echo "<td>" .$r[19] ."</td>";
+                    echo "<td>" .$r[20] ."</td>";
+                    echo "<td>" .$r[21] ."</td>";
+                    echo "<td>" .$r[22] ."</td>";
+                    echo "<td>" .$r[23] ."</td>";
+                    echo "</tr>";  
+                  }
+	    echo "</table>";
+	    echo "</body>";
+	    echo "</html>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            echo $e->getMessage();    
+        }
+    }
+
+    public function getMCHtml()
+    {
+	$result='';
+        $sFN = REQUEST::post('txtMCFN');
+        $sLN = REQUEST::post('txtMCLN');
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midc\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>MDM Id</th><th>Date Recorded</th><th>MDOC Number</th><th>SID Number</th><th>Full Name</th><th>Last Name</th><th>First Name</th><th>Middle Name</th><th>Race</th><th>Sex</th><th>Hair</th><th>Eyes</th><th>Height</th><th>Weight</th><th>Date of Birth</th><th>Image Date</th><th>Image URL</th><th>Image URL Local</th><th>Current Status</th><th>Assigned Location</th><th>Security Level</th><th>Date Intake</th><th>Date Discharged</th><th>Profile URL</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>MDM Id</th><th>Date Recorded</th><th>MDOC Number</th><th>SID Number</th><th>Full Name</th><th>Last Name</th><th>First Name</th><th>Middle Name</th><th>Race</th><th>Sex</th><th>Hair</th><th>Eyes</th><th>Height</th><th>Weight</th><th>Date of Birth</th><th>Image Date</th><th>Image URL</th><th>Image URL Local</th><th>Current Status</th><th>Assigned Location</th><th>Security Level</th><th>Date Intake</th><th>Date Discharged</th><th>Profile URL</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_main";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT mdm_id,date_recorded,mdoc_number,sid_number,full_name,last_name,first_name,middle_name,race,sex,hair,eyes,height,weight,date_of_birth,image_date,image_url,image_url_local,current_status,assigned_location,security_level,date_intake,date_discharge,profile_url FROM " . $table;
+            $sql_query .= " WHERE ";
+	    if(!empty($sFN)){
+	    	$column="first_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sFN;
+	    	$sql_query .= "%';";
+	    }
+	    if(!empty($sFN) and !empty($sLN)){
+		$sql_query .= ' OR ';
+	    }
+	    if(!empty($sLN)){
+	    	$column="last_name";
+            	$sql_query .= $column;
+            	$sql_query .= " LIKE '%";
+            	$sql_query .= $sLN;
+	    	$sql_query .= "%';";
+	    }
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr onclick=\"window.open('" . Config::get('URL') . "table/index?midcid=" . $r[0] . "','_blank');\" style=\"cursor:pointer\" >";
+		    //$result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "<td>" .$r[2] ."</td>";
+                    $result.= "<td>" .$r[3] ."</td>";
+                    $result.= "<td>" .$r[4] ."</td>";
+                    $result.= "<td>" .$r[5] ."</td>";
+                    $result.= "<td>" .$r[6] ."</td>";
+                    $result.= "<td>" .$r[7] ."</td>";
+                    $result.= "<td>" .$r[8] ."</td>";
+                    $result.= "<td>" .$r[9] ."</td>";
+                    $result.= "<td>" .$r[10] ."</td>";
+                    $result.= "<td>" .$r[11] ."</td>";
+                    $result.= "<td>" .$r[12] ."</td>";
+                    $result.= "<td>" .$r[13] ."</td>";
+                    $result.= "<td>" .$r[14] ."</td>";
+                    $result.= "<td>" .$r[15] ."</td>";
+                    $result.= "<td>" .$r[16] ."</td>";
+                    $result.= "<td>" .$r[17] ."</td>";
+                    $result.= "<td>" .$r[18] ."</td>";
+                    $result.= "<td>" .$r[19] ."</td>";
+                    $result.= "<td>" .$r[20] ."</td>";
+                    $result.= "<td>" .$r[21] ."</td>";
+                    $result.= "<td>" .$r[22] ."</td>";
+                    $result.= "<td>" .$r[23] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    public function getMCIdHtml()
+    {
+	    $result='';
+	    $id=REQUEST::get('mcid');
+	    $result.=TableController::getMIDCSentencesHtml($id);
+	    $result.=TableController::getMIDCMarksHtml($id);
+	    $result.=TableController::getMIDCAliasesHtml($id);
+	    return $result;
+    }
+
+    public function getMCSentencesHtml($id)
+    {
+	$result='';
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midcsentences\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Date Recorded</th><th>Type</th><th>Offense</th><th>MCL Number</th><th>Court File Number</th><th>County</th><th>Conviction Type</th><th>Min Sentence</th><th>Max Sentence</th><th>Date of Offense</th><th>Discharge Date</th><th>Discharge Reason</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Date Recorded</th><th>Type</th><th>Offense</th><th>MCL Number</th><th>Court File Number</th><th>County</th><th>Conviction Type</th><th>Min Sentence</th><th>Max Sentence</th><th>Date of Offense</th><th>Discharge Date</th><th>Discharge Reason</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_sentences";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT date_recorded,type,offense,mcl_number,court_file_number,county,conviction_type,min_sentence,max_sentence,date_of_offense,discharge_date,discharge_reason FROM " . $table;
+            $sql_query .= " WHERE ";
+	    $column="mdm_id";
+            $sql_query .= $column;
+            $sql_query .= '=';
+            $sql_query .= $id;
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "<td>" .$r[2] ."</td>";
+                    $result.= "<td>" .$r[3] ."</td>";
+                    $result.= "<td>" .$r[4] ."</td>";
+                    $result.= "<td>" .$r[5] ."</td>";
+                    $result.= "<td>" .$r[6] ."</td>";
+                    $result.= "<td>" .$r[7] ."</td>";
+                    $result.= "<td>" .$r[8] ."</td>";
+                    $result.= "<td>" .$r[9] ."</td>";
+                    $result.= "<td>" .$r[10] ."</td>";
+                    $result.= "<td>" .$r[11] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    public function getMCMarksHtml($id)
+    {
+	$result='';
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midcmarks\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Mark</th><th>Date Recorded</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Mark</th><th>Date Recorded</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_marks";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT mark,date_recorded FROM " . $table;
+            $sql_query .= " WHERE ";
+	    $column="mdm_id";
+            $sql_query .= $column;
+            $sql_query .= '=';
+            $sql_query .= $id;
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+
+    public function getMCAliasesHtml($id)
+    {
+	$result='';
+        
+        // Time limit to 0 for exporting big records.
+        set_time_limit(0); 
+        // mysql hostname
+        $hostname = 'localhost';
+        // mysql username
+        $username = 'root';
+        // mysql password
+        $password = '1503vzw35';
+        // Database Connection using PDO with try catch method. 
+        try { 
+            $dbh = new PDO("mysql:host=$hostname;dbname=xnet_node_root_info_xnet", $username, $password); 
+            $result.= "<table id=\"midcaliases\" border=\"1\" class=\"display\" width=\"100%\" cellspacing=\"0\">";
+            // This is for the first line in the table, this needs to be edited depending on the db table.
+	    $result.="<thead>";
+            $result.= "<tr><th>Alias</th><th>Date Recorded</th></tr>";
+	    $result.="</thead>";
+	    $result.="<tfoot>";
+            $result.= "<tr><th>Alias</th><th>Date Recorded</th></tr>";
+	    $result.="</tfoot>";
+	    $result.="<tbody>";
+            // We will assign variable here for entry By. you can use your variables here.
+            //$EntryBy = $_GET[val];
+            // Get data using PDO prepare Query.
+            $table = "midc_aliases";
+            //Sql query to search, just don't forget to concate the strings together using .= or . 
+            $sql_query = "SELECT alias,date_recorded FROM " . $table;
+            $sql_query .= " WHERE ";
+	    $column="mdm_id";
+            $sql_query .= $column;
+            $sql_query .= '=';
+            $sql_query .= $id;
+
+            $STM2 = $dbh->prepare($sql_query);
+            //$STM2 = $dbh->prepare("SELECT `id`, `postingProfile`, `friend`, `poster`, `posterLink`, `action`, `message`, `postTime_fb`, `postTime`, `privacy`, `likes`, `likers`, `postLink`, `comments`, `firstSeen`, `lastSeen` FROM  WHERE EntryBy = :EntryBy ORDER BY SrNo");
+            // bind paramenters, Named paramenters alaways start with colon(:)
+            //$STM2->bindParam(':EntryBy', $EntryBy);
+            // For Executing prepared statement we will use below function
+            $STM2->execute();
+            // We will fetch records like this and use foreach loop to show multiple Results later in bottom of the page.
+            $STMrecords = $STM2->fetchAll();
+            // We use foreach loop here to echo records.
+		foreach($STMrecords as $r)
+                {
+		    $result.= "<tr>";
+                    $result.= "<td>" .$r[0] ."</td>";
+                    $result.= "<td>" .$r[1] ."</td>";
+                    $result.= "</tr>";  
+                  }
+            $result.= "</tbody>";
+            $result.= "</table>";
+            // Closing MySQL database connection   
+            $dbh = null;    
+        }
+        // In case of error PDO exception will show error message.
+        catch(PDOException $e) {    
+            $result.= $e->getMessage();    
+        }
+	return $result;
+    }
+}

@@ -1,0 +1,47 @@
+databases:
+	addy_pizza:
+		holds tiki website tables only
+		yesman adds data from molly_pizza to these tables to fill the wiki with scraped data
+	molly_pizza:
+		holds scraped data tables:
+			<scraper name>_<table name (usually a desriptive single word)>
+			these tables are made by the scraper and only the scraper edits them
+			once the tables are full with a "complete data set" they are copied to the complete tables (below)
+			and the scraper truncates these tables and starts again on a new data set
+		holds complete scraped data tables:
+			yesman_<scraper name>_<table name (as above)>
+			these tables are made by the scraper after a data set is complete
+			then the scraper calls yesman to digest these tables into the unified tables (below)
+		holds clean/unified tables:
+			these tables are made by yesman
+			these tables are named by what real-world-object describes their core.
+			then the tables are named by what real-world-property they describe about their core/object
+			Example:
+				people = this is a core table describing just the fundamental details about a person such as eye color, birthday, legal name, etc.
+				people_aliases = this is linked to the people table and describes just the alias identities known to be used by the person described in the people table via its id link.
+				images = this is a core table describing just the fundamental details about an image, holding the image itself and the date of the photo, etc.
+				locations = this is another core table
+			there are link type tables that link core tables that are named via their core R.W.O. that is most significant and/or most searched
+			thenthey are named by the other core R.W.O. they link too
+			Example:
+				if a person posts a photo of themselves and two other people at a location
+				then all three people are linked to the photo in the table people_images
+				then the image is linked to the location in location_images
+				then all three people are linked to the location in people_locations
+			
+The math:
+	The unified tables allow the searcher to start a search of a person and is GAURENTEED to find all linked data at or before the second degree of joining tables.
+	Infact in most cases, if not all, all linked data is found within the first degree.
+	This holds true given any entry point into the unified tables
+	the extra data of the linked id feilds is insignificant when compared to the resources saved in querys.
+	This system enables all conclusions to be made from the data without multiple entries of the same data, such as names repeated in criminal records.
+	This system is tollerant of duplicate records due to the linking of records to be an inexact science while the retainment of data is highest priority.
+	Example:
+		if 3 prisons have the same person in their data, the unified tables will willingly and knowingly retain all three entries of the people data
+		yesman will link them in the table people_people but will not delete them.
+		The reason is due to the case of yesman making an incorrect match that is later discovered by a user.
+		The user can then report the false positive match and the match will be undone.
+		The entire process does not lose R.W. Data
+
+			
+		

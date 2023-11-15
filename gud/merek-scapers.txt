@@ -1,0 +1,38 @@
+scrapers needing repair:
+	sawbones:
+		needs classiness
+		needs oop
+		needs logging
+		needs yesman
+		needs database clustering
+	deputysteel:
+		needs classiness
+		needs oop
+		needs logging
+		needs yesman
+		needs database clustering
+		needs to be checked for scraping completeness
+	sergeantrl3:
+		see grey
+	ironbelly:
+		needs classiness
+		needs oop
+		needs logging
+		needs yesman
+		needs database clustering
+		needs to be checked for scraping completeness / needs the large pdf to be scraped
+	machinegunwashington:
+		needs classiness
+		needs oop
+		needs logging
+		needs yesman
+		needs database clustering
+		needs to be checked for scraping completeness
+	blinddiodejefferson:
+		needs classiness
+		needs oop
+		needs logging
+		needs yesman
+		needs database clustering
+		needs to be checked for scraping completeness
+	

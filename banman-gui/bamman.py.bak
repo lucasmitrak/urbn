@@ -1,0 +1,95 @@
+#!/usr/bin/python3
+from tkinter import *
+from tkinter import ttk
+import config as cfg
+import views/login.py as lo
+import views/status.py as st
+import views/search.py as se
+import views/export.py as ex
+
+#create root window
+root=Tk()
+root.resizable(FALSE,FALSE)
+root.option_add('*tearOff', FALSE)
+
+#create root content frame
+frmContent=ttk.Frame(root, padding=(6,6,12,12))
+
+#create content filler frame
+frmDefiner=ttk.Frame(frmContent, width=100, height=50, borderwidth=5, relief="sunken")
+
+#create root content frame2
+frmContent2=ttk.Frame(root)
+
+#create content filler frame2
+frmDefiner2=ttk.Frame(frmContent2, width=100, height=100, borderwidth=5, relief="raised")
+
+#define text variables
+lbl_hello_txt=StringVar()
+
+#define event listeners
+def btn_hello_click():
+    lbl_hello_txt.set('clicked')
+    frmContent2.grid(column=0,row=0,stick=(N,S,E,W))
+    frmDefiner2.grid(column=0,row=0,columnspan=2,rowspan=1, sticky=(N,W))
+    frmContent.grid_forget()
+
+def do_nothing():
+    print('doing nothing')
+
+#create content menu
+menubar=Menu(frmContent)
+
+filemenu=Menu(menubar)
+filemenu.add_command(label='New', command=do_nothing)
+filemenu.add_command(label='Open', command=do_nothing)
+filemenu.add_command(label='Save', command=do_nothing)
+filemenu.add_command(label='Save As', command=do_nothing)
+filemenu.add_command(label='Close', command=do_nothing)
+filemenu.add_separator()
+filemenu.add_command(label='Exit', command=do_nothing)
+menubar.add_cascade(label='File', menu=filemenu)
+
+editmenu=Menu(menubar)
+editmenu.add_command(label='Undo', command=do_nothing)
+editmenu.add_separator()
+editmenu.add_command(label='Cut', command=do_nothing)
+editmenu.add_command(label='Copy', command=do_nothing)
+editmenu.add_command(label='Paste', command=do_nothing)
+editmenu.add_command(label='Delete', command=do_nothing)
+editmenu.add_command(label='Select All', command=do_nothing)
+menubar.add_cascade(label='Edit', menu=editmenu)
+
+helpmenu=Menu(menubar, name='help')
+helpmenu.add_command(label='Help Index', command=do_nothing)
+helpmenu.add_command(label='About...', command=do_nothing)
+menubar.add_cascade(label='Help', menu=helpmenu)
+
+sysmenu=Menu(menubar, name='system')
+menubar.add_cascade(menu=sysmenu)
+
+root['menu']=menubar
+
+#create content label
+lbl_hello=ttk.Label(frmContent, textvariable=lbl_hello_txt)
+
+#create content button
+btn_hello=ttk.Button(frmContent, text="click")
+
+#define events
+lbl_hello.bind('<Enter>', lambda e:lbl_hello_txt.set('entered'))
+lbl_hello.bind('<Leave>', lambda e:lbl_hello_txt.set('left'))
+btn_hello.bind('<Button-1>', lambda e:btn_hello_click())
+
+#setting grid
+frmContent.grid(column=0,row=0, stick=(N,S,E,W))
+frmDefiner.grid(column=0,row=0,columnspan=2,rowspan=1, sticky=(N,W))
+lbl_hello.grid(column=1, row=1, stick=(N,W))
+btn_hello.grid(column=2,row=1, stick=(N,W))
+
+#frmContent2.grid(column=0,row=0,stick=(N,S,E,W))
+#frmDefiner2.grid(column=0,row=0,columnspan=2,rowspan=1, sticky=(N,W))
+
+root.title('root window')
+root.geometry('600x300')
+root.mainloop()

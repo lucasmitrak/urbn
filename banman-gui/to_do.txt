@@ -1,0 +1,6 @@
+sidemenu
+-create frmbtn class
+-each label in frame
+-relief sunken when pressed
+-frame takes height and width
+-label is just centered

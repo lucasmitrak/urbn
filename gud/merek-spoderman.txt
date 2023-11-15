@@ -1,0 +1,108 @@
+spoderman homepage:
+	needs to be like virtualizor controlpanel
+	however instead of showing computer system data and controls, it should show the status of the data
+	Example:
+		Counts
+		datetime of last record scraped
+		datetime of last record added to to unified tables
+		datetime of last wiki page added
+		support details and/or links
+		logos of URBN and Client (this is not a cheap product, lets treat them like rich cunts)
+		controls like contact form
+		chat link (to kayoko support and ticket system)
+		a place to post flash news (link a single highlighted text line that declares scheduled maintance, or invoice outstanding)
+		crime map of their area over the last week
+		some animated graphs or charts or streaming posts like on chenope
+
+spoderman wiki:
+	we can make a better wiki than tiki for this project
+	until then send the user to the tiki url
+	
+	the wiki needs version tracking (like git)
+	the ability to see past versions
+	the ability to allow users with permission to edit
+	searchability
+	catagorization
+	map and image support
+	ability to upload a file then link it to multiple pages
+	ability to link pages, (easily for users)
+	
+spoderman search:
+	we need a google looking/style search
+	like pirate bay, we will have the catagories to search (entry points into the unified tables: people, locations, images, groups, tags)
+	the default will be all entry points
+	
+	we need advanced features for each entry point (make these features accross all entry points so as to be simple for the tards)
+	advanced features are link that of google
+	Example:
+		Im looking for a place to eat on google:
+		I type food, google guesses im hungry and shows me resturants and grocery stores.
+		Googles algo requires mass users to be accurate, which we will never have
+
+		on spoderman, i want to search a name:
+		i type joe swanson, spoderman looks for that string in people, locations, groups, and tags.
+		however i could specify to look only for a person, or a place, or a group
+		i could specify an address with a radius or city or county, spoderman would search people, locations, groups, and tags but only return results where the location is unknown or the location matches my location parameters.
+		i could specify a date range and only records of unknown date and those in my range will be returned
+		i could specify to only return results that strictly fit my parameters, (only return results in my date/location range and dont include the results with unknown dates/locations)
+
+spoderman email notifications:
+	we need to allow the user to push notifications to their email or phone (i know how to add text support)
+	they also need to be able to silence notifications during the night or such and pick if only severe notices are pushed to email or text
+	any combo of these notification settings
+
+spoderman image/file gallery:
+	this is why everyone loves the tiki, also the file gallery.
+	if we add this then we can drop the tiki even sooner
+
+	all images and files need permissions, whitelist style, either by user or group
+
+spoderman image search:
+	the user uploads a minimum of 3 images and the searcher notifies them of matches
+	they should be able to load as many images as they want in each single set
+
+spoderman groups:
+	we need to have users in groups like on the tiki
+
+spoderman billing:
+	we will need to port the system to the billing system:
+	this is easy, we will be linking virtualizor-spoderman-billing-kayoko so as to enforce prompt payment
+	merek will handle this completely
+
+spoderman tagging:
+	all results and pages in the wiki and files and images need to be able to be tagged
+
+spoderman media:
+	they need to be able to view videos on spoderman, easy
+	if this sucks terribly then we can force the download of the media to the clients machine and they can watch it locally
+
+Main headdings:
+	Home:
+	Wiki: (for now, link to tiki. Later to our wiki)
+	Search:	
+		Database (Text) Search
+		Database (Image) Search
+		Wiki (text) Search
+	Files:
+		Image gallery
+			in browser viewing
+		File Gallery
+			In borwser viewing
+		Media Gallery
+			In browser viewing
+	Support:
+		Send ticket (contactus form)
+		Hot to (faqs)
+		NO FORUMs
+		Phone contact
+		Email Contact
+		Text contact
+		mailing address
+		Legal notices (when we add them)
+	Profile:
+		messages
+		notificiation settings
+		account settings
+		groups
+		billing
+		

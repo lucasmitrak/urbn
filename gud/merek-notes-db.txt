@@ -1,0 +1,23 @@
+make replication
+	install on 00d*
+	fix all scripts for rep
+	fixx loadbalancer
+
+scraper scripts need to:
+	check for last position in scrape (if failed, start where you left off)
+	if scrape is new then check if tables are full and if yesman tables are full
+		if full and full
+			call yesman to clear yesman tables, if yesman isnt already trying
+		if full and empty
+			copy tables to yesman tables
+			truncate tables
+			start scrape
+		if empty and full
+			call yesman to clear yesman tables, if yesman isnt already trying
+			start scrape
+		if empty and empty
+			start scrape
+
+MAYBE: yesman needs to start scrapes if the yesman tables are empty, or empty for some time period
+
+ 
